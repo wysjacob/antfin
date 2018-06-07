@@ -15,45 +15,6 @@ EMBEDDING_PATH = 'data/sgns.merge.word'
 MODEL_WEIGHTS_FILE = 'saved_models/question_pairs_weights.h5'
 jieba.load_userdict('data/user_dict.txt')
 
-'''
-# for overview function
-FEATURE_WORDS = set([u'花呗', u'借呗'])
-KE_FU = set([u'人工', u'客服'])
-# 之前用来看数据的各种分布，暂时可以忽略
-def overview(index, q1, q2, label):
-    both, either, neither = [], [], []
-    for i in range(len(q1)):
-        q1_set = set(jieba.cut(q1[i]))
-        q2_set = set(jieba.cut(q2[i]))
-        intersection = q1_set & q2_set
-        union = q1_set | q2_set
-        if intersection & KE_FU:
-            both.append((i,label[i]))
-        elif union & KE_FU:
-            either.append((i, label[i]))
-        else:
-            neither.append((i, label[i]))
-    print(len(both), len(either), len(neither))
-    # feature_words:(37815, 1351, 180)  KE_FU:(25, 37, 39284)
-    both_pos = len([x for x in both if x[1] == 1])
-    both_neg = len([x for x in both if x[1] == 0])
-    eigher_pos = len([x for x in either if x[1] == 1])
-    either_neg = len([x for x in either if x[1] == 0])
-    print(both_pos, both_neg, eigher_pos, either_neg)
-
-    for item in both:
-        print(item[0])
-        print(q1[item[0]])
-        print(q2[item[0]])
-        print(label[item[0]])
-    print('-------------------------')
-    for item in either:
-        print(item[0])
-        print(q1[item[0]])
-        print(q2[item[0]])
-        print(label[item[0]])
-'''
-
 
 def prepare():
     # To create vocab, and save to vocab.data.
