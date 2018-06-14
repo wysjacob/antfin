@@ -50,7 +50,7 @@ def train():
     callbacks = [ModelCheckpoint(MODEL_WEIGHTS_FILE, monitor='val_acc', save_best_only=True)]
     history = model.fit([q1_train, q2_train],
                         y_train,
-                        epochs=10,
+                        epochs=20,
                         validation_split=0.1,
                         verbose=2,
                         batch_size=32,
@@ -75,8 +75,6 @@ def train():
     print(confusion_matrix(y_test, predict))
 
 
-
-
 def final_predict(inpath, outpath):
     # predict function
     model = create_model()
@@ -86,7 +84,7 @@ def final_predict(inpath, outpath):
     linenos, q1, q2 = [], [], []
     with open(inpath, 'r') as fin:
         for line in fin:
-            lineno, sen1, sen2, _ = line.strip().split('\t')
+            lineno, sen1, sen2 = line.strip().split('\t')
             words1 = ' '.join([w for w in jieba.cut(sen1) if w.strip()])
             words2 = ' '.join([w for w in jieba.cut(sen2) if w.strip()])
             q1.append(words1.encode('utf-8'))
@@ -102,14 +100,9 @@ def final_predict(inpath, outpath):
             fout.write(linenos[i] + '\t'+item+'\n')
 
 
-
-
 if __name__ == '__main__':
     prepare()
-    # train()
+    train()
     # final_predict(sys.argv[1], sys.argv[2])
-
-
-
 
 

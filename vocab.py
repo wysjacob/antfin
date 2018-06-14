@@ -6,32 +6,50 @@ import pandas as pd
 import jieba
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
+from sklearn.utils import shuffle
 from utils.langconv import *
 
 FEATURE_WORDS = set([u'花呗', u'借呗'])
 HUA_BEI = set([u'花贝', u'花吧'])
 JIE_BEI = set([u'借吧', u'借呗'])
 MAX_SEQUENCE_LENGTH = 15
+BALANCED = 'add'
 
 jieba.load_userdict('data/user_dict.txt')
 
 
 class Vocab(object):
     def __init__(self, file, simplified=True, correct=True):
-        _, _, _, self.q1_word, self.q2_word, self.label = self.get_data(file, simplified, correct)
+        _, _, _, self.q1_word, self.q2_word, self.label = self.get_data(file, simplified, correct, BALANCED)
         self.q_word = self.q1_word + self.q2_word
         self.embedding = 0
         self.word_index = {}
         self.nb_words = 0
-        self.tokenizer = None
+        self.tokenizer = 'add'
 
-    def get_data(self, file, simplified=True, correct=True):
+    def get_data(self, file, simplified=True, corrected=True, balanced=None):
         df = pd.read_csv(file, header=None, sep='\t')
+        if balanced == 'delete':
+            df = df.sort_index(by=3, ascending=False)
+            df = df[:37370]
+            df = shuffle(df)
+
+        df = df.sort_index(by=3, ascending=False)
         index, q1, q2, label = df[0].tolist(), df[1].tolist(), df[2].tolist(), map(float, df[3].tolist())
+        if balanced == 'add':
+            q1 = q1 + q1[:18685] * 3
+            q2 = q2 + q2[:18685] * 3
+            label = label + label[:18685] * 3
+            for _ in range(9052):
+                index = np.random.randint(18685)
+                q1.append(q1[index])
+                q2.append(q2[index])
+                label.append(label[index])
+
         if simplified:
             q1 = list(map(self.cht_to_chs, q1))
             q2 = list(map(self.cht_to_chs, q2))
-        if correct:
+        if corrected:
             q1 = list(map(self.correction, q1))
             q2 = list(map(self.correction, q2))
         q1_word = map(list, map(jieba.cut, q1))
@@ -42,6 +60,8 @@ class Vocab(object):
 
         q1_word = map(join_, q1_word)
         q2_word = map(join_, q2_word)
+
+
 
         return index, q1, q2, q1_word, q2_word, label
 
@@ -73,12 +93,12 @@ class Vocab(object):
             tokens = line.rstrip().split(' ')
             embeddings_index[tokens[0]] = list(map(float, tokens[1:]))
         self.nb_words = len(self.word_index)
-        self.embedding = np.zeros([self.nb_words + 1, 300])
+        self.embedding = np.random.rand(self.nb_words + 1, 300)
         for word, i in self.word_index.items():
             embedding_vector = embeddings_index.get(word.decode('utf-8'))
             if embedding_vector is not None:
                 self.embedding[i] = embedding_vector
-        print('Null word embeddings: %d' % np.sum(np.sum(self.embedding, axis=1) == 0))
+        # print('Null word embeddings: %d' % np.sum(np.sum(self.embedding, axis=1) == 0))
 
     def to_sequence(self, question, padding=True):
         seq = self.tokenizer.texts_to_sequences(question)
@@ -91,3 +111,6 @@ class Vocab(object):
 if __name__ == '__main__':
     vocab = Vocab('data/data_all.csv')
     vocab.load_embedding('data/sgns.merge.word')
+    label = vocab.label
+    print(len(label), sum(label))
+    # 18685 102477
