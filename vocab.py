@@ -10,8 +10,10 @@ from sklearn.utils import shuffle
 from utils.langconv import *
 
 FEATURE_WORDS = set([u'花呗', u'借呗'])
-HUA_BEI = set([u'花贝', u'花吧'])
-JIE_BEI = set([u'借吧', u'借呗'])
+HUA_BEI = set([u'花贝', u'花吧', u'花臂', u'发倍', u'好呗', u'花被', u'花坝', u'花宝贝', u'画吧'])
+JIE_BEI = set([u'借吧', u'借贝', u'戒备', u'接呗', u'借本'])
+WANG_SHANG_DAI = set([u'网上贷'])
+
 MAX_SEQUENCE_LENGTH = 15
 BALANCED = 'add'
 
@@ -22,6 +24,7 @@ class Vocab(object):
     def __init__(self, file, simplified=True, correct=True):
         _, _, _, self.q1_word, self.q2_word, self.label = self.get_data(file, simplified, correct, BALANCED)
         self.q_word = self.q1_word + self.q2_word
+        # self.analyze(self.q1_word, self.q2_word)
         self.embedding = 0
         self.word_index = {}
         self.nb_words = 0
@@ -29,12 +32,11 @@ class Vocab(object):
 
     def get_data(self, file, simplified=True, corrected=True, balanced=None):
         df = pd.read_csv(file, header=None, sep='\t')
+        df = df.sort_index(by=3, ascending=False)
         if balanced == 'delete':
-            df = df.sort_index(by=3, ascending=False)
             df = df[:37370]
             df = shuffle(df)
 
-        df = df.sort_index(by=3, ascending=False)
         index, q1, q2, label = df[0].tolist(), df[1].tolist(), df[2].tolist(), map(float, df[3].tolist())
         if balanced == 'add':
             q1 = q1 + q1[:18685] * 3
@@ -60,9 +62,6 @@ class Vocab(object):
 
         q1_word = map(join_, q1_word)
         q2_word = map(join_, q2_word)
-
-
-
         return index, q1, q2, q1_word, q2_word, label
 
     def cht_to_chs(self, line):
@@ -78,6 +77,8 @@ class Vocab(object):
             q = q.replace(word, u'花呗')
         for word in JIE_BEI:
             q = q.replace(word, u'借呗')
+        for word in WANG_SHANG_DAI:
+            q = q.replace(word, u'网商贷')
         return q
 
     def load_embedding(self, path):
@@ -106,6 +107,26 @@ class Vocab(object):
             seq = pad_sequences(seq, maxlen=MAX_SEQUENCE_LENGTH)
         return seq
 
+    def analyze(self, q1, q2):
+        both = []
+        either = []
+        neither = []
+        for i in range(len(q1)):
+            set1 = set(q1[i].decode('utf-8').split())
+            set2 = set(q2[i].decode('utf-8').split())
+            if set1 & set2 & FEATURE_WORDS:
+                both.append({'q1': q1[i], 'q2': q2[i]})
+            elif (set1 | set2) & FEATURE_WORDS:
+                either.append({'q1': q1[i], 'q2': q2[i]})
+            else:
+                neither.append({'q1': q1[i], 'q2': q2[i]})
+        print(len(both), len(either), len(neither))
+
+        q = q1+q2
+        with open('candidate.txt', 'w') as fin:
+            for i in range(len(q)):
+                if not (set(q[i].decode('utf-8').split()) & FEATURE_WORDS):
+                    fin.write(q[i]+'\n')
 
 
 if __name__ == '__main__':
@@ -114,3 +135,4 @@ if __name__ == '__main__':
     label = vocab.label
     print(len(label), sum(label))
     # 18685 102477
+    # either 4717   3877
