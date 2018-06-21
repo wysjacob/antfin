@@ -22,13 +22,13 @@ jieba.load_userdict('data/user_dict.txt')
 
 class Vocab(object):
     def __init__(self, file, simplified=True, correct=True):
-        _, _, _, self.q1_word, self.q2_word, self.label = self.get_data(file, simplified, correct, BALANCED)
-        self.q_word = self.q1_word + self.q2_word
-        # self.analyze(self.q1_word, self.q2_word)
+        _, _, _, self.q1_char, self.q2_char, self.label = self.get_data(file, simplified, correct, BALANCED)
+        self.q_char = self.q1_char + self.q2_char
+        # self.analyze(self.q1_char, self.q2_char)
         self.embedding = 0
         self.word_index = {}
         self.nb_words = 0
-        self.tokenizer = 'add'
+        self.tokenizer = ''
 
     def get_data(self, file, simplified=True, corrected=True, balanced=None):
         df = pd.read_csv(file, header=None, sep='\t')
@@ -54,15 +54,18 @@ class Vocab(object):
         if corrected:
             q1 = list(map(self.correction, q1))
             q2 = list(map(self.correction, q2))
-        q1_word = map(list, map(jieba.cut, q1))
-        q2_word = map(list, map(jieba.cut, q2))
+
+        f = lambda x: [i for i in x]
+        q1_char = map(f, q1)
+        q2_char = map(f, q2)
 
         def join_(l):
             return ' '.join(l).encode("utf-8").strip()
 
-        q1_word = map(join_, q1_word)
-        q2_word = map(join_, q2_word)
-        return index, q1, q2, q1_word, q2_word, label
+        q1_char = map(join_, q1_char)
+        q2_char = map(join_, q2_char)
+
+        return index, q1, q2, q1_char, q2_char, label
 
     def cht_to_chs(self, line):
         line = Converter('zh-hans').convert(line.decode("utf-8"))
@@ -83,14 +86,14 @@ class Vocab(object):
 
     def load_embedding(self, path):
         self.tokenizer = Tokenizer()
-        self.tokenizer.fit_on_texts(self.q_word)
+        self.tokenizer.fit_on_texts(self.q_char)
         self.word_index = self.tokenizer.word_index
         print("Words in index: %d" % len(self.word_index))
         embeddings_index = {}
-        fin = io.open('data/sgns.merge.word', 'r', encoding='utf-8', newline='\n', errors='ignore')
+        fin = io.open(path, 'r', encoding='utf-8', newline='\n', errors='ignore')
         for i, line in enumerate(fin):
-            if i == 1200000:
-                break
+            # if i == 1200000:
+            #     break
             tokens = line.rstrip().split(' ')
             embeddings_index[tokens[0]] = list(map(float, tokens[1:]))
         self.nb_words = len(self.word_index)
@@ -131,8 +134,8 @@ class Vocab(object):
 
 if __name__ == '__main__':
     vocab = Vocab('data/data_all.csv')
-    vocab.load_embedding('data/sgns.merge.word')
-    label = vocab.label
-    print(len(label), sum(label))
+    vocab.load_embedding('data/sgns.merge.char')
+    # label = vocab.label
+    # print(len(label), sum(label))
     # 18685 102477
     # either 4717   3877
