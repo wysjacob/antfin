@@ -3,7 +3,6 @@
 import numpy as np
 import io
 import pandas as pd
-import jieba
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from sklearn.utils import shuffle
@@ -16,9 +15,6 @@ WANG_SHANG_DAI = set([u'网上贷'])
 
 MAX_SEQUENCE_LENGTH = 15
 BALANCED = 'add'
-
-jieba.load_userdict('data/user_dict.txt')
-
 
 class Vocab(object):
     def __init__(self, file, simplified=True, correct=True):

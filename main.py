@@ -7,13 +7,11 @@ import numpy as np
 import datetime, time
 from keras.callbacks import Callback, ModelCheckpoint
 from sklearn.model_selection import train_test_split
-import jieba
 from vocab import Vocab
 from max_bag_embedding_model import create_model
 
 EMBEDDING_PATH = 'data/sgns.merge.word'
 MODEL_WEIGHTS_FILE = 'saved_models/question_pairs_weights.h5'
-jieba.load_userdict('data/user_dict.txt')
 
 
 def prepare():
@@ -85,6 +83,12 @@ def final_predict(inpath, outpath):
     with open(inpath, 'r') as fin:
         for line in fin:
             lineno, sen1, sen2 = line.strip().split('\t')
+
+            sen1 = vocab.cht_to_chs(sen1)
+            sen2 = vocab.cht_to_chs(sen2)
+
+            sen1 = vocab.correction(sen1)
+            sen2 = vocab.correction(sen2)
             chars1 = ' '.join([w for w in sen1 if w.strip()])
             chars2 = ' '.join([w for w in sen2 if w.strip()])
             q1.append(chars1.encode('utf-8'))
@@ -103,6 +107,7 @@ def final_predict(inpath, outpath):
 if __name__ == '__main__':
     # prepare()
     # train()
-    final_predict(sys.argv[1], sys.argv[2])
+    final_predict('fin.txt', 'fout.txt')
+    # final_predict(sys.argv[1], sys.argv[2])
 
 
