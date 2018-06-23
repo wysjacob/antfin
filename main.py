@@ -1,4 +1,3 @@
-# /usr/bin/env python
 # -*- coding:utf-8 -*-
 
 import pickle
@@ -7,13 +6,11 @@ import numpy as np
 import datetime, time
 from keras.callbacks import Callback, ModelCheckpoint
 from sklearn.model_selection import train_test_split
-import jieba
 from vocab import Vocab
 from max_bag_embedding_model import create_model
 
 EMBEDDING_PATH = 'data/sgns.merge.word'
 MODEL_WEIGHTS_FILE = 'saved_models/question_pairs_weights.h5'
-jieba.load_userdict('data/user_dict.txt')
 
 
 def prepare():
@@ -29,8 +26,8 @@ def train():
     # training function
     with open('vocab.data', 'rb') as fin:
         vocab = pickle.load(fin)
-    q1_data = vocab.to_sequence(vocab.q1_word)
-    q2_data = vocab.to_sequence(vocab.q2_word)
+    q1_data = vocab.to_sequence(vocab.q1_char)
+    q2_data = vocab.to_sequence(vocab.q2_char)
     labels = np.array(vocab.label, dtype=int)
     print('Shape of question1 data tensor:', q1_data.shape)
     print('Shape of question2 data tensor:', q2_data.shape)
@@ -85,16 +82,16 @@ def final_predict(inpath, outpath):
     with open(inpath, 'r') as fin:
         for line in fin:
             lineno, sen1, sen2 = line.strip().split('\t')
+
             sen1 = vocab.cht_to_chs(sen1)
             sen2 = vocab.cht_to_chs(sen2)
 
             sen1 = vocab.correction(sen1)
             sen2 = vocab.correction(sen2)
-
-            words1 = ' '.join([w for w in jieba.cut(sen1) if w.strip()])
-            words2 = ' '.join([w for w in jieba.cut(sen2) if w.strip()])
-            q1.append(words1.encode('utf-8'))
-            q2.append(words2.encode('utf-8'))
+            chars1 = ' '.join([w for w in sen1 if w.strip()])
+            chars2 = ' '.join([w for w in sen2 if w.strip()])
+            q1.append(chars1.encode('utf-8'))
+            q2.append(chars2.encode('utf-8'))
             linenos.append(lineno)
     q1_predict = vocab.to_sequence(q1)
     q2_predict = vocab.to_sequence(q2)
@@ -109,6 +106,7 @@ def final_predict(inpath, outpath):
 if __name__ == '__main__':
     # prepare()
     # train()
+    # final_predict('fin.txt', 'fout.txt')
     final_predict(sys.argv[1], sys.argv[2])
 
 
