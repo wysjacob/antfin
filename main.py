@@ -85,6 +85,10 @@ def final_predict(inpath, outpath):
     with open(inpath, 'r') as fin:
         for line in fin:
             lineno, sen1, sen2 = line.strip().split('\t')
+            sen1 = vocab.cht_to_chs(sen1)
+            sen2 = vocab.cht_to_chs(sen2)
+            sen1 = vocab.correction(sen1)
+            sen2 = vocab.correction(sen2)
             words1 = ' '.join([w for w in jieba.cut(sen1) if w.strip()])
             words2 = ' '.join([w for w in jieba.cut(sen2) if w.strip()])
             q1.append(words1.encode('utf-8'))
