@@ -14,7 +14,7 @@ JIE_BEI = set([u'借吧', u'借贝', u'戒备', u'接呗', u'借本'])
 WANG_SHANG_DAI = set([u'网上贷'])
 
 MAX_SEQUENCE_LENGTH = 25
-BALANCED = 'add'
+BALANCED = ''
 
 class Vocab(object):
     def __init__(self, file, simplified=True, correct=True):

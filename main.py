@@ -45,13 +45,20 @@ def train():
     print("Starting training at", datetime.datetime.now())
     t0 = time.time()
     callbacks = [ModelCheckpoint(MODEL_WEIGHTS_FILE, monitor='val_acc', save_best_only=True)]
+
+    pos_rate = float(np.sum(labels)) / len(labels)
+    neg_rate = 1 - pos_rate
+    cw = {0: 1/neg_rate, 1: 1/pos_rate}
+
     history = model.fit([q1_train, q2_train],
                         y_train,
                         epochs=40,
                         validation_split=0.1,
                         verbose=2,
                         batch_size=32,
-                        callbacks=callbacks)
+                        callbacks=callbacks,
+                        class_weight=cw
+                        )
     t1 = time.time()
     print("Training ended at", datetime.datetime.now())
     print("Minutes elapsed: %f" % ((t1 - t0) / 60.))
@@ -104,9 +111,9 @@ def final_predict(inpath, outpath):
 
 
 if __name__ == '__main__':
-    # prepare()
-    # train()
+    prepare()
+    train()
     # final_predict('fin.txt', 'fout.txt')
-    final_predict(sys.argv[1], sys.argv[2])
+    # final_predict(sys.argv[1], sys.argv[2])
 
 
