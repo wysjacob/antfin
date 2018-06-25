@@ -6,6 +6,7 @@ from keras.layers import Input, TimeDistributed, Dense, Lambda, concatenate, Dro
 from keras.layers.embeddings import Embedding
 from keras import backend as K
 
+DROPOUT_RATE = 0.2
 
 def max_embedding():
     with open('vocab.data', 'rb') as fin:
@@ -32,16 +33,16 @@ def max_embedding():
 
     merged = concatenate([q1, q2])
     merged = Dense(200, activation='relu')(merged)
-    merged = Dropout(0)(merged)
+    merged = Dropout(DROPOUT_RATE)(merged)
     merged = BatchNormalization()(merged)
     merged = Dense(200, activation='relu')(merged)
-    merged = Dropout(0)(merged)
+    merged = Dropout(DROPOUT_RATE)(merged)
     merged = BatchNormalization()(merged)
     merged = Dense(200, activation='relu')(merged)
-    merged = Dropout(0)(merged)
+    merged = Dropout(DROPOUT_RATE)(merged)
     merged = BatchNormalization()(merged)
     merged = Dense(200, activation='relu')(merged)
-    merged = Dropout(0)(merged)
+    merged = Dropout(DROPOUT_RATE)(merged)
     merged = BatchNormalization()(merged)
 
     is_duplicate = Dense(1, activation='sigmoid')(merged)
