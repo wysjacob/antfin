@@ -50,7 +50,7 @@ def train():
     callbacks = [ModelCheckpoint(MODEL_WEIGHTS_FILE, monitor='val_acc', save_best_only=True)]
     history = model.fit([q1_train, q2_train],
                         y_train,
-                        epochs=20,
+                        epochs=30,
                         validation_split=0.1,
                         verbose=2,
                         batch_size=32,
@@ -105,7 +105,7 @@ def final_predict(inpath, outpath):
 
 
 if __name__ == '__main__':
-    # prepare()
+    prepare()
     train()
     # final_predict(sys.argv[1], sys.argv[2])
 
