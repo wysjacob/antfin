@@ -7,7 +7,7 @@ import datetime, time
 from keras.callbacks import Callback, ModelCheckpoint
 from sklearn.model_selection import train_test_split
 from vocab import Vocab
-from max_bag_embedding_model import create_model
+from model import max_embedding
 
 EMBEDDING_PATH = 'data/sgns.merge.word'
 MODEL_WEIGHTS_FILE = 'saved_models/question_pairs_weights.h5'
@@ -39,7 +39,7 @@ def train():
     q2_train = x_train[:, 1]
     q1_test = x_test[:, 0]
     q2_test = x_test[:, 1]
-    model = create_model()
+    model = max_embedding()
 
     print(model.summary())
     print("Starting training at", datetime.datetime.now())
@@ -74,7 +74,7 @@ def train():
 
 def final_predict(inpath, outpath):
     # predict function
-    model = create_model()
+    model = max_embedding()
     model.load_weights('saved_models/question_pairs_weights.h5')
     with open('vocab.data', 'rb') as fin:
         vocab = pickle.load(fin)

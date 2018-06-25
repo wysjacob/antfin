@@ -7,7 +7,7 @@ from keras.layers.embeddings import Embedding
 from keras import backend as K
 MAX_SEQUENCE_LENGTH = 25
 
-def create_model():
+def max_embedding():
     with open('vocab.data', 'rb') as fin:
         vocab = pickle.load(fin)
 
@@ -49,3 +49,4 @@ def create_model():
     model = Model(inputs=[question1, question2], outputs=is_duplicate)
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
+
