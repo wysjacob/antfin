@@ -101,19 +101,19 @@ def cnn_lstm_f1():
     merged = concatenate([q1_pool, q2_pool])
 
     merged = Dense(200, activation='relu')(merged)
-    merged = Dropout(0)(merged)
+    merged = Dropout(DROPOUT_RATE)(merged)
     merged = BatchNormalization()(merged)
 
     merged = Dense(200, activation='relu')(merged)
-    merged = Dropout(0)(merged)
+    merged = Dropout(DROPOUT_RATE)(merged)
     merged = BatchNormalization()(merged)
 
     merged = Dense(200, activation='relu')(merged)
-    merged = Dropout(0)(merged)
+    merged = Dropout(DROPOUT_RATE)(merged)
     merged = BatchNormalization()(merged)
 
     merged = Dense(200, activation='relu')(merged)
-    merged = Dropout(0)(merged)
+    merged = Dropout(DROPOUT_RATE)(merged)
     merged = BatchNormalization()(merged)
 
 
