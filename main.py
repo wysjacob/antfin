@@ -52,7 +52,7 @@ def train():
 
     history = model.fit([q1_train, q2_train],
                         y_train,
-                        epochs=40,
+                        epochs=20,
                         validation_split=0.1,
                         verbose=2,
                         batch_size=32,
