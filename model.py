@@ -49,7 +49,7 @@ def max_embedding():
 
     is_duplicate = Dense(1, activation='sigmoid')(merged)
 
-    model = Model(inputs=[question1, question2], outputs=is_duplicate)
+    model = Model(input=[question1, question2], output=is_duplicate)
 
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=[metrics.fbeta_score])
     return model
