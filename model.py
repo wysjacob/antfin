@@ -6,7 +6,7 @@ from keras.layers import Input, TimeDistributed, Dense, Lambda, concatenate, Dro
 from keras.layers.embeddings import Embedding
 from keras import backend as K
 
-DROPOUT_RATE = 0.2
+DROPOUT_RATE = 0.5
 
 def max_embedding():
     with open('vocab.data', 'rb') as fin:
