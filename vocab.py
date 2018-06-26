@@ -14,7 +14,7 @@ JIE_BEI = set([u'借吧', u'借贝', u'戒备', u'接呗', u'借本'])
 WANG_SHANG_DAI = set([u'网上贷'])
 
 MAX_SEQUENCE_LENGTH = 25
-BALANCED = ''
+BALANCED = 'add'
 
 class Vocab(object):
     def __init__(self, file, simplified=True, correct=True):
@@ -35,14 +35,14 @@ class Vocab(object):
 
         index, q1, q2, label = df[0].tolist(), df[1].tolist(), df[2].tolist(), map(float, df[3].tolist())
         if balanced == 'add':
-            q1 = q1 + q1[:18685] * 3
-            q2 = q2 + q2[:18685] * 3
+            q1 = q1 + q2[:18685] * 2 + q1[:18685]
+            q2 = q2 + q1[:18685] * 2 + q1[:18685]
             label = label + label[:18685] * 3
-            for _ in range(9052):
-                index = np.random.randint(18685)
-                q1.append(q1[index])
-                q2.append(q2[index])
-                label.append(label[index])
+            # for _ in range(9052):
+            #     index = np.random.randint(18685)
+            #     q1.append(q1[index])
+            #     q2.append(q2[index])
+            #     label.append(label[index])
 
         if simplified:
             q1 = list(map(self.cht_to_chs, q1))

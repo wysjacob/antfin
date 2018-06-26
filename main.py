@@ -52,7 +52,7 @@ def train():
 
     history = model.fit([q1_train, q2_train],
                         y_train,
-                        nb_epoch=20,
+                        epochs=40,
                         validation_split=0.1,
                         verbose=2,
                         batch_size=32,
@@ -111,7 +111,7 @@ def final_predict(inpath, outpath):
 
 
 if __name__ == '__main__':
-    # prepare()
+    prepare()
     train()
     # final_predict('fin.txt', 'fout.txt')
     # final_predict(sys.argv[1], sys.argv[2])

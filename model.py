@@ -2,11 +2,9 @@
 
 import pickle
 from keras.models import Model
-from keras.layers import Input, TimeDistributed, Dense, Lambda, Dropout, BatchNormalization
+from keras.layers import Input, TimeDistributed, Dense, Lambda, concatenate, Dropout, BatchNormalization
 from keras.layers.embeddings import Embedding
-from keras.engine import Merge
 from keras import backend as K
-from keras import metrics
 MAX_SEQUENCE_LENGTH = 25
 DROPOUT_RATE = 0.2
 
@@ -33,7 +31,7 @@ def max_embedding():
     q2 = TimeDistributed(Dense(300, activation='relu'))(q2)
     q2 = Lambda(lambda x: K.max(x, axis=1), output_shape=(300,))(q2)
 
-    merged = Merge(mode='concat')([q1, q2])
+    merged = concatenate([q1, q2])
     merged = Dense(200, activation='relu')(merged)
     merged = Dropout(DROPOUT_RATE)(merged)
     merged = BatchNormalization()(merged)
@@ -49,8 +47,8 @@ def max_embedding():
 
     is_duplicate = Dense(1, activation='sigmoid')(merged)
 
-    model = Model(input=[question1, question2], output=is_duplicate)
+    model = Model(inputs=[question1, question2], outputs=is_duplicate)
 
-    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=[metrics.fbeta_score])
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
 
