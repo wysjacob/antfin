@@ -44,7 +44,7 @@ def train():
     print(model.summary())
     print("Starting training at", datetime.datetime.now())
     t0 = time.time()
-    callbacks = [ModelCheckpoint(MODEL_WEIGHTS_FILE, monitor='val_acc', save_best_only=True)]
+    callbacks = [ModelCheckpoint(MODEL_WEIGHTS_FILE, monitor='val_loss', save_best_only=True)]
 
     pos_rate = float(np.sum(labels)) / len(labels)
     neg_rate = 1 - pos_rate
@@ -62,8 +62,8 @@ def train():
     t1 = time.time()
     print("Training ended at", datetime.datetime.now())
     print("Minutes elapsed: %f" % ((t1 - t0) / 60.))
-    max_val_acc, idx = max((val, idx) for (idx, val) in enumerate(history.history['val_acc']))
-    print('Maximum accuracy at epoch', '{:d}'.format(idx + 1), '=', '{:.4f}'.format(max_val_acc))
+    min_val_loss, idx = min((val, idx) for (idx, val) in enumerate(history.history['val_loss']))
+    print('Min loss at epoch', '{:d}'.format(idx + 1), '=', '{:.4f}'.format(min_val_loss))
 
     model.load_weights(MODEL_WEIGHTS_FILE)
     '''
@@ -111,7 +111,7 @@ def final_predict(inpath, outpath):
 
 
 if __name__ == '__main__':
-    prepare()
+    # prepare()
     train()
     # final_predict('fin.txt', 'fout.txt')
     # final_predict(sys.argv[1], sys.argv[2])
