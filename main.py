@@ -103,7 +103,14 @@ def final_predict(inpath, outpath):
     q1_predict = vocab.to_sequence(q1)
     q2_predict = vocab.to_sequence(q2)
     label_predict = model.predict([q1_predict, q2_predict])
-    label_predict = list(map(str, map(int, map(round, label_predict))))
+    print(label_predict)
+
+    def classify(score, threshold=0.5):
+        ret = 1 if score > threshold else 0
+        return str(ret)
+
+    label_predict = list(map(classify, label_predict))
+
 
     with open(outpath, 'w') as fout:
         for i, item in enumerate(label_predict):
@@ -111,9 +118,9 @@ def final_predict(inpath, outpath):
 
 
 if __name__ == '__main__':
-    # prepare()
+    prepare()
     train()
     # final_predict('fin.txt', 'fout.txt')
-    # final_predict(sys.argv[1], sys.argv[2])
+    # inal_predict(sys.argv[1], sys.argv[2])
 
 
