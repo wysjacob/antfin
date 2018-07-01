@@ -93,12 +93,12 @@ class Vocab(object):
             tokens = line.rstrip().split(' ')
             embeddings_index[tokens[0]] = list(map(float, tokens[1:]))
         self.nb_words = len(self.word_index)
-        self.embedding = np.random.rand(self.nb_words + 1, 300)
+        self.embedding = np.zeros([self.nb_words + 1, 300])
         for word, i in self.word_index.items():
             embedding_vector = embeddings_index.get(word.decode('utf-8'))
             if embedding_vector is not None:
                 self.embedding[i] = embedding_vector
-        # print('Null word embeddings: %d' % np.sum(np.sum(self.embedding, axis=1) == 0))
+        print('Null word embeddings: %d' % np.sum(np.sum(self.embedding, axis=1) == 0))
 
     def to_sequence(self, question, padding=True):
         seq = self.tokenizer.texts_to_sequences(question)

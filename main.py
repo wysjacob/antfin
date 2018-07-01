@@ -7,9 +7,9 @@ import datetime, time
 from keras.callbacks import Callback, ModelCheckpoint
 from sklearn.model_selection import train_test_split
 from vocab import Vocab
-from model import max_embedding
+from model import max_embedding, cnn_lstm_f1, bilstm
 
-EMBEDDING_PATH = 'data/sgns.merge.word'
+EMBEDDING_PATH = 'data/sgns.merge.char'
 MODEL_WEIGHTS_FILE = 'saved_models/question_pairs_weights.h5'
 
 
@@ -39,7 +39,7 @@ def train():
     q2_train = x_train[:, 1]
     q1_test = x_test[:, 0]
     q2_test = x_test[:, 1]
-    model = max_embedding()
+    model = bilstm()
 
     print(model.summary())
     print("Starting training at", datetime.datetime.now())
@@ -52,10 +52,10 @@ def train():
 
     history = model.fit([q1_train, q2_train],
                         y_train,
-                        epochs=40,
+                        epochs=30,
                         validation_split=0.1,
                         verbose=2,
-                        batch_size=32,
+                        batch_size=40,
                         callbacks=callbacks,
                         class_weight=cw
                         )
@@ -79,20 +79,16 @@ def train():
     print(confusion_matrix(y_test, predict))
 
 
-def final_predict(inpath, outpath):
-    # predict function
-    model = max_embedding()
-    model.load_weights('saved_models/question_pairs_weights.h5')
+def final_predict(inpath, outpath, bagging=False):
+
     with open('vocab.data', 'rb') as fin:
         vocab = pickle.load(fin)
     linenos, q1, q2 = [], [], []
     with open(inpath, 'r') as fin:
         for line in fin:
             lineno, sen1, sen2 = line.strip().split('\t')
-
             sen1 = vocab.cht_to_chs(sen1)
             sen2 = vocab.cht_to_chs(sen2)
-
             sen1 = vocab.correction(sen1)
             sen2 = vocab.correction(sen2)
             chars1 = ' '.join([w for w in sen1 if w.strip()])
@@ -102,25 +98,77 @@ def final_predict(inpath, outpath):
             linenos.append(lineno)
     q1_predict = vocab.to_sequence(q1)
     q2_predict = vocab.to_sequence(q2)
-    label_predict = model.predict([q1_predict, q2_predict])
-    print(label_predict)
+
+
 
     def classify(score, threshold=0.5):
         ret = 1 if score > threshold else 0
         return str(ret)
 
-    label_predict = list(map(classify, label_predict))
-
+    if not bagging:
+        model = cnn_lstm_f1()
+        model.load_weights('saved_models/question_pairs_weights.h5')
+        label_predict = model.predict([q1_predict, q2_predict])
+        label_predict = list(map(classify, label_predict))
+    else:
+        label_predict = list(map(str, bagging_predict(q1_predict, q2_predict, mode='vote')))
 
     with open(outpath, 'w') as fout:
         for i, item in enumerate(label_predict):
             fout.write(linenos[i] + '\t'+item+'\n')
 
 
+def bagging_predict(q1_predict, q2_predict, mode='vote'):
+    '''
+
+    :param model: vote: 4 model4 vote predict. score: sum of 4 models score
+    :return: predict results
+    '''
+    models = []
+    model = max_embedding()
+    model.load_weights('saved_models/max1.h5')
+    models.append(model)
+
+    model = max_embedding()
+    model.load_weights('saved_models/max2.h5')
+    models.append(model)
+
+    model = cnn_lstm_f1()
+    model.load_weights('saved_models/lstm3.h5')
+    models.append(model)
+
+    model = cnn_lstm_f1()
+    model.load_weights('saved_models/lstm4.h5')
+    models.append(model)
+
+    def classify(score, threshold=0.5):
+        ret = 1 if score >= threshold else 0
+        return ret
+
+    if mode == 'vote':
+        vote = [0.0 for _ in range(len(q1_predict))]
+        for model in models:
+            predict = model.predict([q1_predict, q2_predict])
+            label_predict = list(map(classify, predict))
+            vote = [i+j for i,j in zip(vote, label_predict)]
+        final_predict = [classify(i, 2.0) for i in vote]
+
+    if mode == 'score':
+        score = [0.0 for _ in range(len(q1_predict))]
+        for model in models:
+            predict = model.predict([q1_predict, q2_predict])
+            score = [i+j for i,j in zip(score, predict)]
+        final_predict = [classify(i, 2.0) for i in score]
+
+    return final_predict
+
+
 if __name__ == '__main__':
-    prepare()
+    # prepare()
     train()
-    # final_predict('fin.txt', 'fout.txt')
-    # inal_predict(sys.argv[1], sys.argv[2])
+    #final_predict('fin.txt', 'fout.txt', bagging=True)
+    # final_predict(sys.argv[1], sys.argv[2], bagging=True)
+
+
 
 
