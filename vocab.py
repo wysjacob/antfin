@@ -15,9 +15,7 @@ JIE_BEI = set([u'借吧', u'借贝', u'戒备', u'接呗', u'借本'])
 WANG_SHANG_DAI = set([u'网上贷'])
 
 MAX_SEQUENCE_LENGTH = 15
-BALANCED = 'add'
-
-jieba.load_userdict('data/user_dict.txt')
+BALANCED = ''
 
 
 class Vocab(object):
@@ -89,8 +87,8 @@ class Vocab(object):
         embeddings_index = {}
         fin = io.open('data/sgns.merge.word', 'r', encoding='utf-8', newline='\n', errors='ignore')
         for i, line in enumerate(fin):
-            if i == 1200000:
-                break
+            # if i == 1200000:
+            #     break
             tokens = line.rstrip().split(' ')
             embeddings_index[tokens[0]] = list(map(float, tokens[1:]))
         self.nb_words = len(self.word_index)

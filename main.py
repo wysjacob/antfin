@@ -3,17 +3,18 @@
 
 import pickle
 import sys
+import os
 import numpy as np
 import datetime, time
 from keras.callbacks import Callback, ModelCheckpoint
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
 import jieba
 from vocab import Vocab
 from model import max_embedding, cnn_lstm_f1
 
 EMBEDDING_PATH = 'data/sgns.merge.word'
-MODEL_WEIGHTS_FILE = 'saved_models/question_pairs_weights.h5'
-jieba.load_userdict('data/user_dict.txt')
+MODEL_WEIGHTS_FILE = 'saved_models/model-ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5'
 
 
 def prepare():
@@ -37,42 +38,64 @@ def train():
     print('Shape of label tensor:', labels.shape)
     x = np.stack((q1_data, q2_data), axis=1)
     y = labels
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.05, random_state=1317)
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.1, random_state=1317)
     q1_train = x_train[:, 0]
     q2_train = x_train[:, 1]
     q1_test = x_test[:, 0]
     q2_test = x_test[:, 1]
-    model = cnn_lstm_f1()
+    model = max_embedding()
 
     print(model.summary())
     print("Starting training at", datetime.datetime.now())
     t0 = time.time()
-    callbacks = [ModelCheckpoint(MODEL_WEIGHTS_FILE, monitor='val_acc', save_best_only=True)]
+    callbacks = [ModelCheckpoint(MODEL_WEIGHTS_FILE, monitor='val_loss', save_best_only=False)]
+
+    pos_rate = float(np.sum(labels)) / len(labels)
+    neg_rate = 1 - pos_rate
+    cw = {0: 1 / neg_rate, 1: 1 / pos_rate}
+
     history = model.fit([q1_train, q2_train],
                         y_train,
-                        epochs=18,
-                        validation_split=0.1,
+                        epochs=40,
+                        validation_split=0.01,
                         verbose=2,
                         batch_size=32,
-                        callbacks=callbacks)
+                        callbacks=callbacks,
+                        class_weight=cw
+                        )
     t1 = time.time()
     print("Training ended at", datetime.datetime.now())
     print("Minutes elapsed: %f" % ((t1 - t0) / 60.))
-    max_val_acc, idx = max((val, idx) for (idx, val) in enumerate(history.history['val_acc']))
-    print('Maximum accuracy at epoch', '{:d}'.format(idx + 1), '=', '{:.4f}'.format(max_val_acc))
+    min_val_loss, idx = min((val, idx) for (idx, val) in enumerate(history.history['val_loss']))
+    print('Min loss at epoch', '{:d}'.format(idx + 1), '=', '{:.4f}'.format(min_val_loss))
 
-    model.load_weights(MODEL_WEIGHTS_FILE)
-    '''
-    loss, accuracy = model.evaluate([q1_test, q2_test], y_test, verbose=0)
-    print('loss = {0:.4f}, accuracy = {1:.4f}'.format(loss, accuracy))
-    '''
-    # check f1
-    predict = model.predict([q1_test, q2_test])
-    predict = map(round, predict)
-    from sklearn import metrics
-    print(metrics.f1_score(y_test, predict, average='weighted'))
-    from sklearn.metrics import confusion_matrix
-    print(confusion_matrix(y_test, predict))
+    path = 'saved_models/'
+
+    def get_f1(matrix):
+        aa = float(matrix[1][1]) / (matrix[1][1] + matrix[0][1])
+        bb = float(matrix[1][1]) / (matrix[1][1] + matrix[1][0])
+        return 2 / (1 / aa + 1 / bb)
+
+    for file in os.listdir(path):
+        if file == '.DS_Store':
+            continue
+        file_path = os.path.join(path, file)
+
+        model.load_weights(file_path)
+
+        # check f1
+        print(file_path, ':')
+        predict = model.predict([q1_test, q2_test])
+        predict = map(round, predict)
+        from sklearn import metrics
+        print('f1:', metrics.f1_score(y_test, predict, average='weighted'))
+
+        matrix = confusion_matrix(y_test, predict)
+        print(matrix)
+        print(get_f1(matrix))
+
+
+
 
 
 def final_predict(inpath, outpath):
@@ -108,5 +131,3 @@ if __name__ == '__main__':
     # prepare()
     train()
     # final_predict(sys.argv[1], sys.argv[2])
-
-
