@@ -7,6 +7,7 @@ import numpy as np
 import datetime, time
 from keras.callbacks import Callback, ModelCheckpoint
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
 from vocab import Vocab
 from model import max_embedding, cnn_lstm_f1, bilstm
 
@@ -35,7 +36,7 @@ def train():
     print('Shape of label tensor:', labels.shape)
     x = np.stack((q1_data, q2_data), axis=1)
     y = labels
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.05, random_state=1317)
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.1, random_state=1317)
     q1_train = x_train[:, 0]
     q2_train = x_train[:, 1]
     q1_test = x_test[:, 0]
@@ -54,10 +55,11 @@ def train():
     history = model.fit([q1_train, q2_train],
                         y_train,
                         epochs=40,
-                        validation_split=0.1,
+                        validation_split=0.001,
                         verbose=2,
                         batch_size=40,
-                        callbacks=callbacks
+                        callbacks=callbacks,
+                        class_weight=cw
                         )
     t1 = time.time()
     print("Training ended at", datetime.datetime.now())
@@ -66,6 +68,12 @@ def train():
     print('Min loss at epoch', '{:d}'.format(idx + 1), '=', '{:.4f}'.format(min_val_loss))
 
     path = 'saved_models/'
+
+    def get_f1(matrix):
+        aa = float(matrix[1][1]) / (matrix[1][1] + matrix[0][1])
+        bb = float(matrix[1][1]) / (matrix[1][1] + matrix[1][0])
+        return 2 / (1 / aa + 1 / bb)
+
     for file in os.listdir(path):
         if file == '.DS_Store':
             continue
@@ -77,10 +85,10 @@ def train():
         print(file_path, ':')
         predict = model.predict([q1_test, q2_test])
         predict = map(round, predict)
-        from sklearn import metrics
-        print('f1:', metrics.f1_score(y_test, predict, average='weighted'))
-        from sklearn.metrics import confusion_matrix
-        print(confusion_matrix(y_test, predict))
+
+        matrix = confusion_matrix(y_test, predict)
+        print(matrix)
+        print('f1:', get_f1(matrix))
 
 
 def final_predict(inpath, outpath, bagging=False):
@@ -168,8 +176,8 @@ def bagging_predict(q1_predict, q2_predict, mode='vote'):
 
 
 if __name__ == '__main__':
-    # prepare()
-    # train()
+    prepare()
+    train()
     #final_predict('fin.txt', 'fout.txt', bagging=True)
     final_predict(sys.argv[1], sys.argv[2])
 

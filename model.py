@@ -6,7 +6,7 @@ from keras.layers import Input, TimeDistributed, Dense, Lambda, concatenate, Dro
 from keras.layers.embeddings import Embedding
 from keras import backend as K
 from layers import Position_Embedding
-MAX_SEQUENCE_LENGTH = 25
+MAX_SEQUENCE_LENGTH = 20
 DROPOUT_RATE = 0
 
 def max_embedding():
@@ -57,19 +57,19 @@ def cnn_lstm_f1():
     with open('vocab.data', 'rb') as fin:
         vocab = pickle.load(fin)
 
-    question1 = Input(shape=(20,))
-    question2 = Input(shape=(20,))
+    question1 = Input(shape=(MAX_SEQUENCE_LENGTH,))
+    question2 = Input(shape=(MAX_SEQUENCE_LENGTH,))
 
     q1 = Embedding(vocab.nb_words + 1,
                    300,
                    weights=[vocab.embedding],
-                   input_length=20,
+                   input_length=MAX_SEQUENCE_LENGTH,
                    trainable=False)(question1)
 
     q2 = Embedding(vocab.nb_words + 1,
                    300,
                    weights=[vocab.embedding],
-                   input_length=20,
+                   input_length=MAX_SEQUENCE_LENGTH,
                    trainable=False)(question2)
 
     f_rnn = LSTM(30, return_sequences=True, implementation=1)
