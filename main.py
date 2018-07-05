@@ -43,7 +43,7 @@ def train():
     q2_train = x_train[:, 1]
     q1_test = x_test[:, 0]
     q2_test = x_test[:, 1]
-    model = max_embedding()
+    model = cnn_lstm_f1()
 
     print(model.summary())
     print("Starting training at", datetime.datetime.now())
@@ -56,7 +56,7 @@ def train():
 
     history = model.fit([q1_train, q2_train],
                         y_train,
-                        epochs=40,
+                        epochs=30,
                         validation_split=0.01,
                         verbose=2,
                         batch_size=32,
@@ -88,11 +88,10 @@ def train():
         predict = model.predict([q1_test, q2_test])
         predict = map(round, predict)
         from sklearn import metrics
-        print('f1:', metrics.f1_score(y_test, predict, average='weighted'))
 
         matrix = confusion_matrix(y_test, predict)
         print(matrix)
-        print(get_f1(matrix))
+        print('f1:', get_f1(matrix))
 
 
 
