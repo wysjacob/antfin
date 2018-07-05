@@ -5,8 +5,9 @@ from keras.models import Model
 from keras.layers import Input, TimeDistributed, Dense, Lambda, concatenate, Dropout, BatchNormalization, LSTM, Conv1D
 from keras.layers.embeddings import Embedding
 from keras import backend as K
+from layers import Position_Embedding
 MAX_SEQUENCE_LENGTH = 25
-DROPOUT_RATE = 0.2
+DROPOUT_RATE = 0
 
 def max_embedding():
     with open('vocab.data', 'rb') as fin:
@@ -56,37 +57,44 @@ def cnn_lstm_f1():
     with open('vocab.data', 'rb') as fin:
         vocab = pickle.load(fin)
 
-    question1 = Input(shape=(25,))
-    question2 = Input(shape=(25,))
+    question1 = Input(shape=(20,))
+    question2 = Input(shape=(20,))
 
     q1 = Embedding(vocab.nb_words + 1,
                    300,
                    weights=[vocab.embedding],
-                   input_length=25,
+                   input_length=20,
                    trainable=False)(question1)
 
     q2 = Embedding(vocab.nb_words + 1,
                    300,
                    weights=[vocab.embedding],
-                   input_length=25,
+                   input_length=20,
                    trainable=False)(question2)
 
-    f_rnn = LSTM(141, return_sequences=True, implementation=1)
-    b_rnn = LSTM(141, return_sequences=True, implementation=1, go_backwards=True)
+    f_rnn = LSTM(30, return_sequences=True, implementation=1)
+    b_rnn = LSTM(30, return_sequences=True, implementation=1, go_backwards=True)
+
+    pos = Position_Embedding(mode='concat')
 
     qf_rnn = f_rnn(q1)
     qb_rnn = b_rnn(q1)
+
     # q1_rnn = merge([qf_rnn, qb_rnn], mode='concat', concat_axis=-1)
     q1_rnn = concatenate([qf_rnn, qb_rnn], axis=-1)
+    q1_rnn = pos(q1_rnn)
+    q1_rnn = BatchNormalization()(q1_rnn)
 
     af_rnn = f_rnn(q2)
     ab_rnn = b_rnn(q2)
     # q2_rnn = merge([af_rnn, ab_rnn], mode='concat', concat_axis=-1)
     q2_rnn = concatenate([af_rnn, ab_rnn], axis=-1)
+    q2_rnn = pos(q2_rnn)
+    q2_rnn = BatchNormalization()(q2_rnn)
 
     # cnn
     cnns = [Conv1D(kernel_size=kernel_size,
-                   filters=256,
+                   filters=100,
                    activation='tanh',
                    padding='same') for kernel_size in [1, 2, 3, 5]]
     # qq_cnn = merge([cnn(question_pool) for cnn in cnns], mode='concat')
@@ -96,26 +104,11 @@ def cnn_lstm_f1():
 
     maxpool = Lambda(lambda x: K.max(x, axis=1, keepdims=False), output_shape=lambda x: (x[0], x[2]))
     maxpool.supports_masking = True
-    q1_pool = maxpool(q1_cnn)
-    q2_pool = maxpool(q2_cnn)
-    merged = concatenate([q1_pool, q2_pool])
-
-    merged = Dense(200, activation='relu')(merged)
-    merged = Dropout(DROPOUT_RATE)(merged)
-    merged = BatchNormalization()(merged)
-
-    merged = Dense(200, activation='relu')(merged)
-    merged = Dropout(DROPOUT_RATE)(merged)
-    merged = BatchNormalization()(merged)
-
-    merged = Dense(200, activation='relu')(merged)
-    merged = Dropout(DROPOUT_RATE)(merged)
-    merged = BatchNormalization()(merged)
-
-    merged = Dense(200, activation='relu')(merged)
-    merged = Dropout(DROPOUT_RATE)(merged)
-    merged = BatchNormalization()(merged)
-
+    q1_pool = Dropout(0.05)(maxpool(q1_cnn))
+    q2_pool = Dropout(0.05)(maxpool(q2_cnn))
+    merged1 = Dense(100, activation='relu')(q1_pool)
+    merged2 = Dense(100, activation='relu')(q2_pool)
+    merged = concatenate([merged1, merged2])
 
     is_duplicate = Dense(1, activation='sigmoid')(merged)
 

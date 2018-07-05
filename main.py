@@ -2,6 +2,7 @@
 
 import pickle
 import sys
+import os
 import numpy as np
 import datetime, time
 from keras.callbacks import Callback, ModelCheckpoint
@@ -10,7 +11,7 @@ from vocab import Vocab
 from model import max_embedding, cnn_lstm_f1, bilstm
 
 EMBEDDING_PATH = 'data/sgns.merge.char'
-MODEL_WEIGHTS_FILE = 'saved_models/question_pairs_weights.h5'
+MODEL_WEIGHTS_FILE = 'saved_models/model-ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5'
 
 
 def prepare():
@@ -39,12 +40,12 @@ def train():
     q2_train = x_train[:, 1]
     q1_test = x_test[:, 0]
     q2_test = x_test[:, 1]
-    model = bilstm()
+    model = cnn_lstm_f1()
 
     print(model.summary())
     print("Starting training at", datetime.datetime.now())
     t0 = time.time()
-    callbacks = [ModelCheckpoint(MODEL_WEIGHTS_FILE, monitor='val_loss', save_best_only=True)]
+    callbacks = [ModelCheckpoint(MODEL_WEIGHTS_FILE, monitor='val_loss', save_best_only=False)]
 
     pos_rate = float(np.sum(labels)) / len(labels)
     neg_rate = 1 - pos_rate
@@ -52,12 +53,11 @@ def train():
 
     history = model.fit([q1_train, q2_train],
                         y_train,
-                        epochs=30,
+                        epochs=40,
                         validation_split=0.1,
                         verbose=2,
                         batch_size=40,
-                        callbacks=callbacks,
-                        class_weight=cw
+                        callbacks=callbacks
                         )
     t1 = time.time()
     print("Training ended at", datetime.datetime.now())
@@ -65,18 +65,22 @@ def train():
     min_val_loss, idx = min((val, idx) for (idx, val) in enumerate(history.history['val_loss']))
     print('Min loss at epoch', '{:d}'.format(idx + 1), '=', '{:.4f}'.format(min_val_loss))
 
-    model.load_weights(MODEL_WEIGHTS_FILE)
-    '''
-    loss, accuracy = model.evaluate([q1_test, q2_test], y_test, verbose=0)
-    print('loss = {0:.4f}, accuracy = {1:.4f}'.format(loss, accuracy))
-    '''
-    # check f1
-    predict = model.predict([q1_test, q2_test])
-    predict = map(round, predict)
-    from sklearn import metrics
-    print(metrics.f1_score(y_test, predict, average='weighted'))
-    from sklearn.metrics import confusion_matrix
-    print(confusion_matrix(y_test, predict))
+    path = 'saved_models/'
+    for file in os.listdir(path):
+        if file == '.DS_Store':
+            continue
+        file_path = os.path.join(path, file)
+
+        model.load_weights(file_path)
+
+        # check f1
+        print(file_path, ':')
+        predict = model.predict([q1_test, q2_test])
+        predict = map(round, predict)
+        from sklearn import metrics
+        print('f1:', metrics.f1_score(y_test, predict, average='weighted'))
+        from sklearn.metrics import confusion_matrix
+        print(confusion_matrix(y_test, predict))
 
 
 def final_predict(inpath, outpath, bagging=False):
@@ -101,7 +105,7 @@ def final_predict(inpath, outpath, bagging=False):
 
 
 
-    def classify(score, threshold=0.5):
+    def classify(score, threshold=0.45):
         ret = 1 if score > threshold else 0
         return str(ret)
 
@@ -165,9 +169,9 @@ def bagging_predict(q1_predict, q2_predict, mode='vote'):
 
 if __name__ == '__main__':
     # prepare()
-    train()
+    # train()
     #final_predict('fin.txt', 'fout.txt', bagging=True)
-    # final_predict(sys.argv[1], sys.argv[2], bagging=True)
+    final_predict(sys.argv[1], sys.argv[2])
 
 
 
