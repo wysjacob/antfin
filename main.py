@@ -39,11 +39,14 @@ def train():
     x = np.stack((q1_data, q2_data), axis=1)
     y = labels
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.1, random_state=1317)
+    q1_all = x[:, 0]
+    q2_all = x[:, 1]
     q1_train = x_train[:, 0]
     q2_train = x_train[:, 1]
     q1_test = x_test[:, 0]
     q2_test = x_test[:, 1]
-    model = cnn_lstm_f1()
+
+    model = max_embedding()
 
     print(model.summary())
     print("Starting training at", datetime.datetime.now())
@@ -53,10 +56,9 @@ def train():
     pos_rate = float(np.sum(labels)) / len(labels)
     neg_rate = 1 - pos_rate
     cw = {0: 1 / neg_rate, 1: 1 / pos_rate}
-
     history = model.fit([q1_train, q2_train],
                         y_train,
-                        epochs=30,
+                        epochs=40,
                         validation_split=0.01,
                         verbose=2,
                         batch_size=32,
@@ -76,22 +78,30 @@ def train():
         bb = float(matrix[1][1]) / (matrix[1][1] + matrix[1][0])
         return 2 / (1 / aa + 1 / bb)
 
+    result = []
     for file in os.listdir(path):
         if file == '.DS_Store':
             continue
         file_path = os.path.join(path, file)
 
         model.load_weights(file_path)
-
-        # check f1
         print(file_path, ':')
-        predict = model.predict([q1_test, q2_test])
-        predict = map(round, predict)
-        from sklearn import metrics
+        all_predict = model.predict([q1_all, q2_all])
+        all_predict = map(round, all_predict)
+        all_matrix = confusion_matrix(y, all_predict)
+        print('all:')
+        print(all_matrix)
+        print('all_f1:', get_f1(all_matrix))
 
-        matrix = confusion_matrix(y_test, predict)
-        print(matrix)
-        print('f1:', get_f1(matrix))
+        test_predict = model.predict([q1_test, q2_test])
+        test_predict = map(round, test_predict)
+        test_matrix = confusion_matrix(y_test, test_predict)
+        print('test:')
+        print(test_matrix)
+        print('test_f1:', get_f1(test_matrix))
+
+        result.append((get_f1(all_matrix), get_f1(test_matrix), file))
+    print(sorted(result, key=lambda z: z[0], reverse=True))
 
 
 
