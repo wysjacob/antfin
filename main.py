@@ -11,7 +11,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 import jieba
 from vocab import Vocab
-from model import max_embedding, cnn_lstm_f1
+from model import max_embedding, cnn_lstm_f1, bilstm
 
 EMBEDDING_PATH = 'data/sgns.merge.word'
 MODEL_WEIGHTS_FILE = 'saved_models/model-ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5'
@@ -46,7 +46,7 @@ def train():
     q1_test = x_test[:, 0]
     q2_test = x_test[:, 1]
 
-    model = max_embedding()
+    model = bilstm()
 
     print(model.summary())
     print("Starting training at", datetime.datetime.now())
@@ -58,7 +58,7 @@ def train():
     cw = {0: 1 / neg_rate, 1: 1 / pos_rate}
     history = model.fit([q1_train, q2_train],
                         y_train,
-                        epochs=40,
+                        epochs=50,
                         validation_split=0.01,
                         verbose=2,
                         batch_size=32,
@@ -86,12 +86,13 @@ def train():
 
         model.load_weights(file_path)
         print(file_path, ':')
-        all_predict = model.predict([q1_all, q2_all])
-        all_predict = map(round, all_predict)
-        all_matrix = confusion_matrix(y, all_predict)
-        print('all:')
-        print(all_matrix)
-        print('all_f1:', get_f1(all_matrix))
+
+        # all_predict = model.predict([q1_all, q2_all])
+        # all_predict = map(round, all_predict)
+        # all_matrix = confusion_matrix(y, all_predict)
+        # print('all:')
+        # print(all_matrix)
+        # print('all_f1:', get_f1(all_matrix))
 
         test_predict = model.predict([q1_test, q2_test])
         test_predict = map(round, test_predict)
@@ -100,9 +101,19 @@ def train():
         print(test_matrix)
         print('test_f1:', get_f1(test_matrix))
 
-        result.append((get_f1(all_matrix), get_f1(test_matrix), file))
-    print(sorted(result, key=lambda z: z[0], reverse=True))
+        result.append((get_f1(test_matrix), file_path))
 
+    result = sorted(result, key=lambda z: z[0], reverse=True)
+    print(result)
+
+    # best for all
+    model.load_weights(result[0][1])
+    all_predict = model.predict([q1_all, q2_all])
+    all_predict = map(round, all_predict)
+    all_matrix = confusion_matrix(y, all_predict)
+    print('all:')
+    print(all_matrix)
+    print('all_f1:', get_f1(all_matrix))
 
 
 

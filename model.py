@@ -7,7 +7,7 @@ from keras.layers.embeddings import Embedding
 from keras import backend as K
 from layers import Position_Embedding
 MAX_SEQUENCE_LENGTH = 15
-DROPOUT_RATE = 0.2
+DROPOUT_RATE = 0.3
 
 def max_embedding():
     with open('vocab.data', 'rb') as fin:
